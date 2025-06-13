@@ -14,21 +14,21 @@ scheme_map = {
     "WX": sanscript.WX
 }
 
-# Chakra mappings based on petal letters
+# Chakra mappings based on ITRANS transliterated consonants
 chakra_mappings = {
-    'क': 'Anahata', 'ख': 'Anahata', 'ग': 'Anahata', 'घ': 'Anahata', 'ङ': 'Anahata',
-    'च': 'Anahata', 'छ': 'Anahata', 'ज': 'Anahata', 'झ': 'Anahata', 'ञ': 'Anahata',
-    'ट': 'Anahata', 'ठ': 'Anahata',
-    'ड': 'Manipura', 'ढ': 'Manipura', 'ण': 'Manipura', 'त': 'Manipura', 'थ': 'Manipura',
-    'द': 'Manipura', 'ध': 'Manipura', 'न': 'Manipura', 'प': 'Manipura', 'फ': 'Manipura',
-    'ब': 'Svadhisthana', 'भ': 'Svadhisthana', 'म': 'Svadhisthana', 'य': 'Svadhisthana',
-    'र': 'Svadhisthana', 'ल': 'Svadhisthana',
-    'व': 'Muladhara', 'श': 'Muladhara', 'ष': 'Muladhara', 'स': 'Muladhara',
-    'ह': 'Ajna', 'क्ष': 'Ajna'
+    'ka': 'Anahata', 'kha': 'Anahata', 'ga': 'Anahata', 'gha': 'Anahata', 'Nga': 'Anahata',
+    'cha': 'Anahata', 'Cha': 'Anahata', 'ja': 'Anahata', 'jha': 'Anahata', 'Nja': 'Anahata',
+    'Ta': 'Anahata', 'Tha': 'Anahata',
+    'Da': 'Manipura', 'Dha': 'Manipura', 'Na': 'Manipura', 'ta': 'Manipura', 'tha': 'Manipura',
+    'da': 'Manipura', 'dha': 'Manipura', 'na': 'Manipura', 'pa': 'Manipura', 'pha': 'Manipura',
+    'ba': 'Svadhisthana', 'bha': 'Svadhisthana', 'ma': 'Svadhisthana', 'ya': 'Svadhisthana',
+    'ra': 'Svadhisthana', 'la': 'Svadhisthana',
+    'va': 'Muladhara', 'sha': 'Muladhara', 'Sha': 'Muladhara', 'sa': 'Muladhara',
+    'ha': 'Ajna', 'kSha': 'Ajna'
 }
 
-# Vowels for Vishuddha chakra
-vowels = ['अ', 'आ', 'इ', 'ई', 'उ', 'ऊ', 'ऋ', 'ॠ', 'ऌ', 'ॡ', 'ए', 'ऐ', 'ओ', 'औ', 'अं', 'अः']
+# Vowels for Vishuddha chakra in ITRANS
+vowels = ['a', 'aa', 'i', 'ii', 'u', 'uu', 'RRi', 'RRI', 'LLi', 'LLI', 'e', 'ai', 'o', 'au', 'aM', 'aH']
 
 # Bhava and Rasa mappings
 bhava_rasa_mappings = {
@@ -107,7 +107,7 @@ devas_df['Chakra_Name'] = devas_df['Chakra'].apply(lambda x: chakra_name_map.get
 
 # Page configuration
 st.set_page_config(page_title="Name-Chakra-Deva Explorer", layout="wide")
-st.title("🧘 Name-Chakra-Deva Explorer by @mahanhrgowda")
+st.title("🧘 Name-Chakra-Deva Explorer")
 st.markdown("Discover how your name or phrase resonates with chakras, emotions (bhavas), aesthetic feelings (rasas), and Vedic Devas. Enter in English Latin script or Devanagari, or try an example like 'Om' or 'Gayatri Mantra'.")
 
 # Tabs for navigation
@@ -127,14 +127,16 @@ with tabs[0]:
         if name_input:
             try:
                 devanagari_name = transliterate(name_input, scheme_map[transliteration_scheme], sanscript.DEVANAGARI)
+                # Transliterate to ITRANS for phoneme matching
+                itrans_name = transliterate(name_input, scheme_map[transliteration_scheme], sanscript.ITRANS)
                 st.write(f"Name/Phrase in Devanagari: {devanagari_name}")
                 
-                # Extract consonants and their chakras
-                consonants_with_chakras = [(char, chakra_mappings[char]) for char in devanagari_name if char in chakra_mappings]
-                vowel_count = sum(1 for char in devanagari_name if char in vowels)
+                # Extract consonants and vowels in ITRANS
+                consonants_with_chakras = [(char, chakra_mappings[char]) for char in itrans_name.split() if char in chakra_mappings]
+                vowel_count = sum(1 for char in itrans_name.split() if char in vowels)
                 
                 if not consonants_with_chakras and not vowel_count:
-                    st.error("No valid Sanskrit letters found. Try a different spelling or scheme.")
+                    st.error("No valid Sanskrit phonemes found. Try a different spelling or scheme.")
                 else:
                     # Count chakra frequencies
                     chakra_counts = {'Muladhara': 0, 'Svadhisthana': 0, 'Manipura': 0, 'Anahata': 0, 'Vishuddha': 0, 'Ajna': 0}
@@ -210,13 +212,15 @@ with tabs[0]:
                     st.error("Please enter a valid Devanagari name or phrase.")
                 else:
                     st.write(f"Name/Phrase in Devanagari: {devanagari_name}")
+                    # Transliterate Devanagari to ITRANS for phoneme matching
+                    itrans_name = transliterate(devanagari_name, sanscript.DEVANAGARI, sanscript.ITRANS)
                     
-                    # Extract consonants and their chakras
-                    consonants_with_chakras = [(char, chakra_mappings[char]) for char in devanagari_name if char in chakra_mappings]
-                    vowel_count = sum(1 for char in devanagari_name if char in vowels)
+                    # Extract consonants and vowels in ITRANS
+                    consonants_with_chakras = [(char, chakra_mappings[char]) for char in itrans_name.split() if char in chakra_mappings]
+                    vowel_count = sum(1 for char in itrans_name.split() if char in vowels)
                     
                     if not consonants_with_chakras and not vowel_count:
-                        st.error("No valid Sanskrit letters found in the name.")
+                        st.error("No valid Sanskrit phonemes found in the name.")
                     else:
                         # Count chakra frequencies
                         chakra_counts = {'Muladhara': 0, 'Svadhisthana': 0, 'Manipura': 0, 'Anahata': 0, 'Vishuddha': 0, 'Ajna': 0}
@@ -302,15 +306,15 @@ with tabs[1]:
 # Chakras Tab
 with tabs[2]:
     st.header("Chakras")
-    st.markdown("Chakras are energy centers in the body, each linked to specific Sanskrit letters and qualities. Learn more at [Sanskrit and Chakras](https://www.ruhgu.com/sanskrit-and-chakras/).")
+    st.markdown("Chakras are energy centers in the body, each linked to specific Sanskrit phonemes and qualities. Learn more at [Sanskrit and Chakras](https://www.ruhgu.com/sanskrit-and-chakras/).")
     
     chakras = [
-        {"Name": "Muladhara", "Emoji": "🔴", "Description": "Resonates with grounding and survival, evoking caution and alertness", "Letters": "व, श, ष, स", "Element": "Earth"},
-        {"Name": "Svadhisthana", "Emoji": "🧡", "Description": "Flows with creativity and passion, igniting love and beauty", "Letters": "ब, भ, म, य, र, ल", "Element": "Water"},
-        {"Name": "Manipura", "Emoji": "🟡", "Description": "Radiates confidence and power, inspiring courage and heroism", "Letters": "ड, ढ, ण, त, थ, द, ध, न, प, फ", "Element": "Fire"},
-        {"Name": "Anahata", "Emoji": "💚", "Description": "Pulses with love and empathy, fostering deep connections", "Letters": "क, ख, ग, घ, ङ, च, छ, ज, झ, ञ, ट, ठ", "Element": "Air"},
-        {"Name": "Vishuddha", "Emoji": "🟦", "Description": "Vibrates with expression and joy, sparking laughter and communication", "Letters": "अ, आ, इ, ई, उ, ऊ, ऋ, ॠ, ऌ, ॡ, ए, ऐ, ओ, औ, अं, अः", "Element": "Ether"},
-        {"Name": "Ajna", "Emoji": "🟣", "Description": "Illuminates intuition and insight, evoking wonder and awe", "Letters": "ह, क्ष", "Element": "Light"}
+        {"Name": "Muladhara", "Emoji": "🔴", "Description": "Resonates with grounding and survival, evoking caution and alertness", "Letters": "va, sha, Sha, sa", "Element": "Earth"},
+        {"Name": "Svadhisthana", "Emoji": "🧡", "Description": "Flows with creativity and passion, igniting love and beauty", "Letters": "ba, bha, ma, ya, ra, la", "Element": "Water"},
+        {"Name": "Manipura", "Emoji": "🟡", "Description": "Radiates confidence and power, inspiring courage and heroism", "Letters": "Da, Dha, Na, ta, tha, da, dha, na, pa, pha", "Element": "Fire"},
+        {"Name": "Anahata", "Emoji": "💚", "Description": "Pulses with love and empathy, fostering deep connections", "Letters": "ka, kha, ga, gha, Nga, cha, Cha, ja, jha, Nja, Ta, Tha", "Element": "Air"},
+        {"Name": "Vishuddha", "Emoji": "🟦", "Description": "Vibrates with expression and joy, sparking laughter and communication", "Letters": "a, aa, i, ii, u, uu, RRi, RRI, LLi, LLI, e, ai, o, au, aM, aH", "Element": "Ether"},
+        {"Name": "Ajna", "Emoji": "🟣", "Description": "Illuminates intuition and insight, evoking wonder and awe", "Letters": "ha, kSha", "Element": "Light"}
     ]
     
     for chakra in chakras:
@@ -318,7 +322,7 @@ with tabs[2]:
         st.markdown(f"""
         - **Description**: {chakra['Description']}.
         - **Element**: {chakra['Element']}
-        - **Associated Letters**: {chakra['Letters']}
+        - **Associated Phonemes**: {chakra['Letters']}
         """)
 
 # Bhavas and Rasas Tab
@@ -345,7 +349,7 @@ with tabs[4]:
 with tabs[5]:
     st.header("How It Works")
     st.markdown("""
-    This app analyzes your name or phrase by converting it to Sanskrit (Devanagari) script. Each consonant is mapped to a chakra based on traditional Sanskrit petal associations, and vowels activate the Vishuddha chakra. The chakra with the most letters is considered dominant, with ties noted as significant influences. Emotions (bhavas) and aesthetic feelings (rasas) are assigned based on the dominant chakra, creating a personalized story. The narrative includes connections to Vedic Devas, describing their roles and vahana symbolisms. The mappings are interpretive, blending traditional phonetics with modern creativity. For more on Sanskrit and chakras, visit [Sanskrit and Chakras](https://www.ruhgu.com/sanskrit-and-chakras/).
+    This app analyzes your name or phrase by converting it to Sanskrit (Devanagari) script. Each consonant is mapped to a chakra based on traditional Sanskrit petal associations, using English transliterations (ITRANS scheme), and vowels activate the Vishuddha chakra. The chakra with the most phonemes is considered dominant, with ties noted as significant influences. Emotions (bhavas) and aesthetic feelings (rasas) are assigned based on the dominant chakra, creating a personalized story. The narrative includes connections to Vedic Devas, describing their roles and vahana symbolisms. The mappings are interpretive, blending traditional phonetics with modern creativity. For more on Sanskrit and chakras, visit [Sanskrit and Chakras](https://www.ruhgu.com/sanskrit-and-chakras/).
     
     **Input Options**:
     - **Transliteration**: Enter in English Latin script using a scheme like ITRANS ('rAma' for राम). Choose a scheme from the dropdown. See [Transliteration Schemes](https://en.wikipedia.org/wiki/ITRANS).
