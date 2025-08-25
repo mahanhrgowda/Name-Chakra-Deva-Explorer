@@ -53,11 +53,11 @@ def extract_phonemes(itrans_name):
         for vlen in range(4, 0, -1):
             if i + vlen <= len(itrans_name):
                 sub = itrans_name[i:i + vlen]
-                    if sub in vowels_list:
-                        vowels_found.append(sub)
-                        i += vlen
-                        matched = True
-                        break
+                if sub in vowels_list:
+                    vowels_found.append(sub)
+                    i += vlen
+                    matched = True
+                    break
         if not matched:
             i += 1  # Skip invalid chars
     return consonants_found, vowels_found
