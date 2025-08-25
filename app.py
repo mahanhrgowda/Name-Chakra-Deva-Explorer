@@ -5,6 +5,52 @@ from indic_transliteration import sanscript
 from indic_transliteration.sanscript import transliterate
 import re
 
+# Parser function to extract base consonants and vowels from ITRANS string
+def extract_phonemes(itrans_name):
+    base_consonants = ['kSh', 'Ng', 'Nj', 'Ch', 'Th', 'Dh', 'Sh', 'kh', 'gh', 'ch', 'jh', 'Th', 'Dh', 'ph', 'bh', 'sh', 'ph', 'bh', 'k', 'g', 'c', 'j', 'T', 'D', 't', 'd', 'p', 'b', 'm', 'y', 'r', 'l', 'v', 's', 'h', 'N']
+    vowels_list = ['RRi', 'RRI', 'LLi', 'LLI', 'AI', 'AU', 'A', 'I', 'U', 'E', 'O', 'a', 'i', 'u', 'e', 'ai', 'au', 'o', 'M', 'H']
+    consonants_found = []
+    vowels_found = []
+    i = 0
+    while i < len(itrans_name):
+        matched = False
+        # Match longest consonant first
+        for clen in range(3, 0, -1):  # Max length like 'kSh' = 3
+            if i + clen <= len(itrans_name):
+                sub = itrans_name[i:i + clen]
+                if sub in base_consonants:
+                    consonants_found.append(sub)
+                    i += clen
+                    matched = True
+                    break
+        if matched:
+            # Check for following vowel (matra)
+            vmatched = False
+            for vlen in range(4, 0, -1):  # Max length like 'RRi' = 3
+                if i + vlen <= len(itrans_name):
+                    sub = itrans_name[i:i + vlen]
+                    if sub in vowels_list:
+                        vowels_found.append(sub)
+                        i += vlen
+                        vmatched = True
+                        break
+            if not vmatched:
+                # Implicit 'a' if no vowel, but don't add to vowels (since not explicit)
+                pass
+            continue
+        # If no consonant, match vowel
+        for vlen in range(4, 0, -1):
+            if i + vlen <= len(itrans_name):
+                sub = itrans_name[i:i + vlen]
+                if sub in vowels_list:
+                    vowels_found.append(sub)
+                    i += vlen
+                    matched = True
+                    break
+        if not matched:
+            i += 1  # Skip invalid chars
+    return consonants_found, vowels_found
+
 # Transliteration scheme mapping
 scheme_map = {
     "ITRANS": sanscript.ITRANS,
@@ -13,7 +59,6 @@ scheme_map = {
     "Velthuis": sanscript.VELTHUIS,
     "WX": sanscript.WX
 }
-
 # Chakra mappings based on ITRANS transliterated consonants
 chakra_mappings = {
     'ka': 'Anahata', 'kha': 'Anahata', 'ga': 'Anahata', 'gha': 'Anahata', 'Nga': 'Anahata',
@@ -26,10 +71,8 @@ chakra_mappings = {
     'va': 'Muladhara', 'sha': 'Muladhara', 'Sha': 'Muladhara', 'sa': 'Muladhara',
     'ha': 'Ajna', 'kSha': 'Ajna'
 }
-
 # Vowels for Vishuddha chakra in ITRANS
 vowels = ['a', 'aa', 'i', 'ii', 'u', 'uu', 'RRi', 'RRI', 'LLi', 'LLI', 'e', 'ai', 'o', 'au', 'aM', 'aH']
-
 # Bhava and Rasa mappings
 bhava_rasa_mappings = {
     'Muladhara': {'bhava': 'Bhaya (Fear)', 'rasa': 'Bhayanaka (Fearful)', 'bhava_emoji': '😨', 'rasa_emoji': '😨', 'description': 'resonates with grounding and survival, evoking caution and alertness', 'emoji': '🔴', 'element': 'Earth'},
@@ -39,7 +82,6 @@ bhava_rasa_mappings = {
     'Vishuddha': {'bhava': 'Hasya (Mirth)', 'rasa': 'Hasya (Comic)', 'bhava_emoji': '😂', 'rasa_emoji': '😂', 'description': 'vibrates with expression and joy, sparking laughter and communication', 'emoji': '🟦', 'element': 'Ether'},
     'Ajna': {'bhava': 'Vismaya (Astonishment)', 'rasa': 'Adbhuta (Wonder)', 'bhava_emoji': '😲', 'rasa_emoji': '😲', 'description': 'illuminates intuition and insight, evoking wonder and awe', 'emoji': '🟣', 'element': 'Light'}
 }
-
 # Chakra colors
 chakra_colors = {
     'Muladhara': 'red',
@@ -50,7 +92,6 @@ chakra_colors = {
     'Ajna': 'indigo',
     'Vishuddha (Vowels)': 'blue'
 }
-
 # Deva dataset
 deva_data = [
     {"Deva": "🌊 Varuṇa", "Type": "☀️ Āditya", "Chakra": "🟦 Viśuddha", "Element": "💧 Water", "Vāhana": "🐊 Makara", "Bīja": "🕉️ Om Vam Varuṇāya Namaḥ", "Description": "Guardian of cosmic order, ruling the vast oceans with truth", "Vahana_Symbolism": "Symbolizes mastery over water and emotions"},
@@ -87,7 +128,6 @@ deva_data = [
     {"Deva": "🌬️ Nāṣatya", "Type": "👬 Aśvin", "Chakra": "🌀 Iḍā", "Element": "🌬️ Breath (Left)", "Vāhana": "🐎 Horse", "Bīja": "🕉️ Om Nāsatye Namaḥ", "Description": "Healer of lunar breath, restoring balance", "Vahana_Symbolism": "Represents speed, freedom, and nobility"},
     {"Deva": "💪 Dasra", "Type": "👬 Aśvin", "Chakra": "🔥 Piṅgalā", "Element": "🔋 Vitality (Right)", "Vāhana": "🐎 Horse", "Bīja": "🕉️ Om Dasrāya Namaḥ", "Description": "Energizer of solar vitality, igniting strength", "Vahana_Symbolism": "Represents speed, freedom, and nobility"}
 ]
-
 # Standardize chakra names
 chakra_name_map = {
     'Mūlādhāra': 'Muladhara',
@@ -101,40 +141,46 @@ chakra_name_map = {
     'Piṅgalā': 'Pingala',
     'All': 'All'
 }
-
 devas_df = pd.DataFrame(deva_data)
 devas_df['Chakra_Name'] = devas_df['Chakra'].apply(lambda x: chakra_name_map.get(x.split()[-1], x.split()[-1]))
-
 # Page configuration
 st.set_page_config(page_title="Name-Chakra-Deva Explorer", layout="wide")
 st.title("🧘 Name-Chakra-Deva Explorer")
 st.markdown("Discover how your name or phrase resonates with chakras, emotions (bhavas), aesthetic feelings (rasas), and Vedic Devas. Enter in English Latin script or Devanagari, or try an example like 'Om' or 'Gayatri Mantra'.")
-
 # Tabs for navigation
 tabs = st.tabs(["Name Analysis", "Deva Explorer", "Chakras", "Bhavas and Rasas", "Vedic Devas", "How It Works"])
-
 # Name Analysis Tab
 with tabs[0]:
     st.header("Name Analysis")
     examples = ["", "Rama", "Krishna", "Om", "Gayatri Mantra"]
     selected_example = st.selectbox("Try an Example", examples, help="Select an example to see its analysis.")
     input_method = st.radio("Input Method", ["Transliteration", "Devanagari"])
-    
+   
     if input_method == "Transliteration":
         transliteration_scheme = st.selectbox("Select Transliteration Scheme", list(scheme_map.keys()), help="Choose how your name is converted to Sanskrit. For example, in ITRANS, use 'rAma' for राम. See [Transliteration Guide](https://en.wikipedia.org/wiki/ITRANS).")
         name_input = st.text_input("Enter Name or Phrase in English Latin Script", value=selected_example if selected_example else "", placeholder="e.g., 'rAma' or 'Om Namah Shivaya'")
-        
+       
         if name_input:
             try:
                 devanagari_name = transliterate(name_input, scheme_map[transliteration_scheme], sanscript.DEVANAGARI)
                 # Transliterate to ITRANS for phoneme matching
                 itrans_name = transliterate(name_input, scheme_map[transliteration_scheme], sanscript.ITRANS)
                 st.write(f"Name/Phrase in Devanagari: {devanagari_name}")
-                
-                # Extract consonants and vowels in ITRANS
-                consonants_with_chakras = [(char, chakra_mappings[char]) for char in itrans_name.split() if char in chakra_mappings]
-                vowel_count = sum(1 for char in itrans_name.split() if char in vowels)
-                
+               
+                # Extract consonants and vowels in ITRANS using parser
+                cons, vows = extract_phonemes(itrans_name)
+                consonants_with_chakras = []
+                for con in cons:
+                    key = con + 'a'
+                    if key in chakra_mappings:
+                        consonants_with_chakras.append((key, chakra_mappings[key]))
+                    else:
+                        # Try lowercase/uppercase adjustment if not found (rare)
+                        key_lower = con.lower() + 'a'
+                        if key_lower in chakra_mappings:
+                            consonants_with_chakras.append((key_lower, chakra_mappings[key_lower]))
+                vowel_count = len([v for v in vows if v in vowels])
+               
                 if not consonants_with_chakras and not vowel_count:
                     st.error("No valid Sanskrit phonemes found. Try a different spelling or scheme.")
                 else:
@@ -142,7 +188,7 @@ with tabs[0]:
                     chakra_counts = {'Muladhara': 0, 'Svadhisthana': 0, 'Manipura': 0, 'Anahata': 0, 'Vishuddha': 0, 'Ajna': 0}
                     for _, chakra in consonants_with_chakras:
                         chakra_counts[chakra] += 1
-                    
+                   
                     # Find dominant chakra(s)
                     max_count = max(chakra_counts.values())
                     if max_count == 0 and vowel_count == 0:
@@ -150,7 +196,7 @@ with tabs[0]:
                     else:
                         dominant_chakras = [chakra for chakra, count in chakra_counts.items() if count == max_count and count > 0]
                         dominant_chakra = dominant_chakras[0] if dominant_chakras else 'Vishuddha' if vowel_count > 0 else None
-                        
+                       
                         # Generate dynamic prose
                         prose = []
                         if max_count > 0:
@@ -162,7 +208,7 @@ with tabs[0]:
                                 prose.append(f"Additionally, the chakras {', '.join(other_texts)} are equally prominent, bringing their unique energies.")
                             prose.append(f"The dominant emotion is **{bhava_rasa_mappings[dominant_chakra]['bhava']}** {bhava_rasa_mappings[dominant_chakra]['bhava_emoji']}, evoking the **{bhava_rasa_mappings[dominant_chakra]['rasa']}** feeling {bhava_rasa_mappings[dominant_chakra]['rasa_emoji']}, embodying its essence.")
                             prose.append(f"This vibrant energy aligns with the element **{bhava_rasa_mappings[dominant_chakra]['element']}**, symbolizing its core qualities.")
-                            
+                           
                             # Add Deva descriptions
                             associated_devas = devas_df[(devas_df['Chakra_Name'] == dominant_chakra) | (devas_df['Chakra_Name'] == 'All')].head(2)
                             if not associated_devas.empty:
@@ -172,9 +218,9 @@ with tabs[0]:
                             prose.append(f"Moreover, the {vowel_count} vowel{'s' if vowel_count > 1 else ''} activate the **Vishuddha** chakra {bhava_rasa_mappings['Vishuddha']['emoji']}, enhancing communication and self-expression.")
                         if max_count == 0 and vowel_count > 0:
                             prose = [f"The name or phrase **{devanagari_name}** consists only of vowels, primarily activating the **Vishuddha** chakra {bhava_rasa_mappings['Vishuddha']['emoji']}, which {bhava_rasa_mappings['Vishuddha']['description']}. The dominant emotion is **{bhava_rasa_mappings['Vishuddha']['bhava']}** {bhava_rasa_mappings['Vishuddha']['bhava_emoji']}, evoking the **{bhava_rasa_mappings['Vishuddha']['rasa']}** feeling {bhava_rasa_mappings['Vishuddha']['rasa_emoji']}, embodying its essence."]
-                        
+                       
                         st.markdown(" ".join(prose))
-                        
+                       
                         # Display associated Devas
                         if dominant_chakra:
                             st.subheader("Associated Vedic Devas")
@@ -192,7 +238,7 @@ with tabs[0]:
                                         """)
                             else:
                                 st.write("No specific Devas are directly associated with this chakra.")
-                        
+                       
                         # Bar chart for chakra distribution
                         st.subheader("Chakra Distribution")
                         chakra_df = pd.DataFrame(list(chakra_counts.items()), columns=['Chakra', 'Frequency'])
@@ -204,7 +250,7 @@ with tabs[0]:
                 st.error(f"Error processing name: {str(e)}. Ensure correct format for the selected scheme, e.g., 'rAma' for ITRANS. See [Transliteration Guide](https://en.wikipedia.org/wiki/ITRANS).")
     else:
         devanagari_name = st.text_input("Enter Name or Phrase in Devanagari", value=selected_example if selected_example and selected_example not in ["Rama", "Krishna", "Om", "Gayatri Mantra"] else "", placeholder="e.g., राम")
-        
+       
         if devanagari_name:
             try:
                 # Validate Devanagari input
@@ -214,11 +260,20 @@ with tabs[0]:
                     st.write(f"Name/Phrase in Devanagari: {devanagari_name}")
                     # Transliterate Devanagari to ITRANS for phoneme matching
                     itrans_name = transliterate(devanagari_name, sanscript.DEVANAGARI, sanscript.ITRANS)
-                    
-                    # Extract consonants and vowels in ITRANS
-                    consonants_with_chakras = [(char, chakra_mappings[char]) for char in itrans_name.split() if char in chakra_mappings]
-                    vowel_count = sum(1 for char in itrans_name.split() if char in vowels)
-                    
+                   
+                    # Extract consonants and vowels in ITRANS using parser
+                    cons, vows = extract_phonemes(itrans_name)
+                    consonants_with_chakras = []
+                    for con in cons:
+                        key = con + 'a'
+                        if key in chakra_mappings:
+                            consonants_with_chakras.append((key, chakra_mappings[key]))
+                        else:
+                            key_lower = con.lower() + 'a'
+                            if key_lower in chakra_mappings:
+                                consonants_with_chakras.append((key_lower, chakra_mappings[key_lower]))
+                    vowel_count = len([v for v in vows if v in vowels])
+                   
                     if not consonants_with_chakras and not vowel_count:
                         st.error("No valid Sanskrit phonemes found in the name.")
                     else:
@@ -226,7 +281,7 @@ with tabs[0]:
                         chakra_counts = {'Muladhara': 0, 'Svadhisthana': 0, 'Manipura': 0, 'Anahata': 0, 'Vishuddha': 0, 'Ajna': 0}
                         for _, chakra in consonants_with_chakras:
                             chakra_counts[chakra] += 1
-                        
+                       
                         # Find dominant chakra(s)
                         max_count = max(chakra_counts.values())
                         if max_count == 0 and vowel_count == 0:
@@ -234,7 +289,7 @@ with tabs[0]:
                         else:
                             dominant_chakras = [chakra for chakra, count in chakra_counts.items() if count == max_count and count > 0]
                             dominant_chakra = dominant_chakras[0] if dominant_chakras else 'Vishuddha' if vowel_count > 0 else None
-                            
+                           
                             # Generate dynamic prose
                             prose = []
                             if max_count > 0:
@@ -246,7 +301,7 @@ with tabs[0]:
                                     prose.append(f"Additionally, the chakras {', '.join(other_texts)} are equally prominent, bringing their unique energies.")
                                 prose.append(f"The dominant emotion is **{bhava_rasa_mappings[dominant_chakra]['bhava']}** {bhava_rasa_mappings[dominant_chakra]['bhava_emoji']}, evoking the **{bhava_rasa_mappings[dominant_chakra]['rasa']}** feeling {bhava_rasa_mappings[dominant_chakra]['rasa_emoji']}, embodying its essence.")
                                 prose.append(f"This vibrant energy aligns with the element **{bhava_rasa_mappings[dominant_chakra]['element']}**, symbolizing its core qualities.")
-                                
+                               
                                 # Add Deva descriptions
                                 associated_devas = devas_df[(devas_df['Chakra_Name'] == dominant_chakra) | (devas_df['Chakra_Name'] == 'All')].head(2)
                                 if not associated_devas.empty:
@@ -256,9 +311,9 @@ with tabs[0]:
                                 prose.append(f"Moreover, the {vowel_count} vowel{'s' if vowel_count > 1 else ''} activate the **Vishuddha** chakra {bhava_rasa_mappings['Vishuddha']['emoji']}, enhancing communication and self-expression.")
                             if max_count == 0 and vowel_count > 0:
                                 prose = [f"The name or phrase **{devanagari_name}** consists only of vowels, primarily activating the **Vishuddha** chakra {bhava_rasa_mappings['Vishuddha']['emoji']}, which {bhava_rasa_mappings['Vishuddha']['description']}. The dominant emotion is **{bhava_rasa_mappings['Vishuddha']['bhava']}** {bhava_rasa_mappings['Vishuddha']['bhava_emoji']}, evoking the **{bhava_rasa_mappings['Vishuddha']['rasa']}** feeling {bhava_rasa_mappings['Vishuddha']['rasa_emoji']}, embodying its essence."]
-                            
+                           
                             st.markdown(" ".join(prose))
-                            
+                           
                             # Display associated Devas
                             if dominant_chakra:
                                 st.subheader("Associated Vedic Devas")
@@ -276,7 +331,7 @@ with tabs[0]:
                                             """)
                                 else:
                                     st.write("No specific Devas are directly associated with this chakra.")
-                            
+                           
                             # Bar chart for chakra distribution
                             st.subheader("Chakra Distribution")
                             chakra_df = pd.DataFrame(list(chakra_counts.items()), columns=['Chakra', 'Frequency'])
@@ -286,12 +341,11 @@ with tabs[0]:
                             st.plotly_chart(fig, use_container_width=True)
             except Exception as e:
                 st.error(f"Error processing name: {str(e)}. Ensure the name contains valid Devanagari characters.")
-
 # Deva Explorer Tab
 with tabs[1]:
     st.header("Deva Explorer")
     st.markdown("Explore the 33 Vedic Devas, their associated chakras, elements, vāhanas, and mantras.")
-    
+   
     for _, row in devas_df.iterrows():
         with st.expander(f"{row['Deva']} ({row['Type']})"):
             st.markdown(f"""
@@ -302,12 +356,11 @@ with tabs[1]:
             - **Description**: {row['Description']}
             - **Vahana Symbolism**: {row['Vahana_Symbolism']}
             """)
-
 # Chakras Tab
 with tabs[2]:
     st.header("Chakras")
     st.markdown("Chakras are energy centers in the body, each linked to specific Sanskrit phonemes and qualities. Learn more at [Sanskrit and Chakras](https://www.ruhgu.com/sanskrit-and-chakras/).")
-    
+   
     chakras = [
         {"Name": "Muladhara", "Emoji": "🔴", "Description": "Resonates with grounding and survival, evoking caution and alertness", "Letters": "va, sha, Sha, sa", "Element": "Earth"},
         {"Name": "Svadhisthana", "Emoji": "🧡", "Description": "Flows with creativity and passion, igniting love and beauty", "Letters": "ba, bha, ma, ya, ra, la", "Element": "Water"},
@@ -316,7 +369,7 @@ with tabs[2]:
         {"Name": "Vishuddha", "Emoji": "🟦", "Description": "Vibrates with expression and joy, sparking laughter and communication", "Letters": "a, aa, i, ii, u, uu, RRi, RRI, LLi, LLI, e, ai, o, au, aM, aH", "Element": "Ether"},
         {"Name": "Ajna", "Emoji": "🟣", "Description": "Illuminates intuition and insight, evoking wonder and awe", "Letters": "ha, kSha", "Element": "Light"}
     ]
-    
+   
     for chakra in chakras:
         st.subheader(f"{chakra['Emoji']} {chakra['Name']}")
         st.markdown(f"""
@@ -324,12 +377,11 @@ with tabs[2]:
         - **Element**: {chakra['Element']}
         - **Associated Phonemes**: {chakra['Letters']}
         """)
-
 # Bhavas and Rasas Tab
 with tabs[3]:
     st.header("Bhavas and Rasas")
     st.markdown("Bhavas are emotive states, and rasas are aesthetic emotions from Indian classical arts, as described in the Natyashastra. The connections to chakras are modern interpretations, not traditional facts. Learn more at [Rasa Aesthetics](https://en.wikipedia.org/wiki/Rasa_(aesthetics)).")
-    
+   
     for chakra, info in bhava_rasa_mappings.items():
         st.subheader(f"{info['emoji']} {chakra}")
         st.markdown(f"""
@@ -338,19 +390,17 @@ with tabs[3]:
         - **Description**: {info['description'].capitalize()}.
         - **Element**: {info['element']}
         """)
-
 # Vedic Devas Tab
 with tabs[4]:
     st.header("Vedic Devas")
     st.markdown("The 33 Vedic Devas are divine forces in Hinduism, including 12 Ādityas, 11 Rudras, 8 Vasus, and 2 Aśvins. Each is associated with specific energies and qualities. Learn more at [Hindu Deities](https://en.wikipedia.org/wiki/Hindu_deities).")
     st.write("Explore the Devas in the 'Deva Explorer' tab to learn about their chakras, elements, vāhanas, and mantras.")
-
 # How It Works Tab
 with tabs[5]:
     st.header("How It Works")
     st.markdown("""
     This app analyzes your name or phrase by converting it to Sanskrit (Devanagari) script. Each consonant is mapped to a chakra based on traditional Sanskrit petal associations, using English transliterations (ITRANS scheme), and vowels activate the Vishuddha chakra. The chakra with the most phonemes is considered dominant, with ties noted as significant influences. Emotions (bhavas) and aesthetic feelings (rasas) are assigned based on the dominant chakra, creating a personalized story. The narrative includes connections to Vedic Devas, describing their roles and vahana symbolisms. The mappings are interpretive, blending traditional phonetics with modern creativity. For more on Sanskrit and chakras, visit [Sanskrit and Chakras](https://www.ruhgu.com/sanskrit-and-chakras/).
-    
+   
     **Input Options**:
     - **Transliteration**: Enter in English Latin script using a scheme like ITRANS ('rAma' for राम). Choose a scheme from the dropdown. See [Transliteration Schemes](https://en.wikipedia.org/wiki/ITRANS).
     - **Devanagari**: Type directly in Sanskrit script (e.g., राम) if you have a Devanagari keyboard.
