@@ -5,6 +5,17 @@ from indic_transliteration import sanscript
 from indic_transliteration.sanscript import transliterate
 import re
 
+# Preprocess function for English mode
+def preprocess_input(name_input):
+    vowel_map = {'A': 'aa', 'E': 'ee', 'I': 'ii', 'O': 'oo', 'U': 'uu'}
+    processed = ''
+    for char in name_input:
+        if char in vowel_map:
+            processed += vowel_map[char]
+        else:
+            processed += char.lower()
+    return processed
+
 # Parser function to extract base consonants and vowels from ITRANS string
 def extract_phonemes(itrans_name):
     base_consonants = ['kSh', 'Ng', 'Nj', 'Ch', 'Th', 'Dh', 'Sh', 'kh', 'gh', 'ch', 'jh', 'Th', 'Dh', 'ph', 'bh', 'sh', 'ph', 'bh', 'k', 'g', 'c', 'j', 'T', 'D', 't', 'd', 'p', 'b', 'm', 'y', 'r', 'l', 'v', 's', 'h', 'N']
@@ -42,11 +53,11 @@ def extract_phonemes(itrans_name):
         for vlen in range(4, 0, -1):
             if i + vlen <= len(itrans_name):
                 sub = itrans_name[i:i + vlen]
-                if sub in vowels_list:
-                    vowels_found.append(sub)
-                    i += vlen
-                    matched = True
-                    break
+                    if sub in vowels_list:
+                        vowels_found.append(sub)
+                        i += vlen
+                        matched = True
+                        break
         if not matched:
             i += 1  # Skip invalid chars
     return consonants_found, vowels_found
@@ -157,11 +168,14 @@ with tabs[0]:
     input_method = st.radio("Input Method", ["Transliteration", "Devanagari"])
    
     if input_method == "Transliteration":
-        transliteration_scheme = st.selectbox("Select Transliteration Scheme", list(scheme_map.keys()), help="Choose how your name is converted to Sanskrit. For example, in ITRANS, use 'rAma' for राम. See [Transliteration Guide](https://en.wikipedia.org/wiki/ITRANS).")
+        transliteration_scheme = st.selectbox("Select Transliteration Scheme", list(scheme_map.keys()), help="Choose how your name is converted to Sanskrit. For example, in ITRANS, use 'rAma' or 'raama' for राम. See [Transliteration Guide](https://en.wikipedia.org/wiki/ITRANS).")
+        english_mode = st.checkbox("Treat as English Name (use standard spelling, approximates to Sanskrit sounds)", value=False, help="Check this if your input is an English name not following the transliteration scheme. It will lowercase the input and convert capital vowels to long sounds (e.g., 'A' to 'aa').")
         name_input = st.text_input("Enter Name or Phrase in English Latin Script", value=selected_example if selected_example else "", placeholder="e.g., 'rAma' or 'Om Namah Shivaya'")
        
         if name_input:
             try:
+                if english_mode:
+                    name_input = preprocess_input(name_input)
                 devanagari_name = transliterate(name_input, scheme_map[transliteration_scheme], sanscript.DEVANAGARI)
                 # Transliterate to ITRANS for phoneme matching
                 itrans_name = transliterate(name_input, scheme_map[transliteration_scheme], sanscript.ITRANS)
@@ -179,7 +193,7 @@ with tabs[0]:
                         key_lower = con.lower() + 'a'
                         if key_lower in chakra_mappings:
                             consonants_with_chakras.append((key_lower, chakra_mappings[key_lower]))
-                vowel_count = len([v for v in vows if v in vowels])
+                vowel_count = sum(1 for char in vows if char in vowels)
                
                 if not consonants_with_chakras and not vowel_count:
                     st.error("No valid Sanskrit phonemes found. Try a different spelling or scheme.")
@@ -272,7 +286,7 @@ with tabs[0]:
                             key_lower = con.lower() + 'a'
                             if key_lower in chakra_mappings:
                                 consonants_with_chakras.append((key_lower, chakra_mappings[key_lower]))
-                    vowel_count = len([v for v in vows if v in vowels])
+                    vowel_count = sum(1 for char in vows if char in vowels)
                    
                     if not consonants_with_chakras and not vowel_count:
                         st.error("No valid Sanskrit phonemes found in the name.")
@@ -402,6 +416,6 @@ with tabs[5]:
     This app analyzes your name or phrase by converting it to Sanskrit (Devanagari) script. Each consonant is mapped to a chakra based on traditional Sanskrit petal associations, using English transliterations (ITRANS scheme), and vowels activate the Vishuddha chakra. The chakra with the most phonemes is considered dominant, with ties noted as significant influences. Emotions (bhavas) and aesthetic feelings (rasas) are assigned based on the dominant chakra, creating a personalized story. The narrative includes connections to Vedic Devas, describing their roles and vahana symbolisms. The mappings are interpretive, blending traditional phonetics with modern creativity. For more on Sanskrit and chakras, visit [Sanskrit and Chakras](https://www.ruhgu.com/sanskrit-and-chakras/).
    
     **Input Options**:
-    - **Transliteration**: Enter in English Latin script using a scheme like ITRANS ('rAma' for राम). Choose a scheme from the dropdown. See [Transliteration Schemes](https://en.wikipedia.org/wiki/ITRANS).
+    - **Transliteration**: Enter in English Latin script using a scheme like ITRANS ('rAma' or 'raama' for राम). Choose a scheme from the dropdown. See [Transliteration Schemes](https://en.wikipedia.org/wiki/ITRANS). For standard English names, check the 'Treat as English Name' box for better approximation.
     - **Devanagari**: Type directly in Sanskrit script (e.g., राम) if you have a Devanagari keyboard.
     """)
